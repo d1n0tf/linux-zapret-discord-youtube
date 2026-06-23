@@ -165,7 +165,9 @@ python3 linux/zapret_linux.py update-check enable
 python3 linux/zapret_linux.py update-check disable
 ```
 
-`check-updates` показывает установленную версию форка, последнюю версию оригинального проекта и последнюю версию форка. Чтобы сразу открыть страницу релизов форка при доступном обновлении:
+`check-updates` показывает установленную версию форка, последнюю версию оригинального проекта и последнюю версию форка. Версия форка проверяется по `.service/version.txt` в ветке `main`, без GitHub Releases.
+
+Чтобы сразу открыть страницу форка при доступном обновлении:
 
 ```bash
 python3 linux/zapret_linux.py check-updates --open

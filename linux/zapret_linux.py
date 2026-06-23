@@ -339,10 +339,12 @@ def github_raw_url(repo: str, path: str) -> str:
     return f"https://raw.githubusercontent.com/{repo}/main/{path.lstrip('/')}"
 
 
-def github_releases_url(repo: str, version: str | None = None) -> str:
-    if version:
-        return f"https://github.com/{repo}/releases/tag/{version}"
-    return f"https://github.com/{repo}/releases/latest"
+def github_repo_url(repo: str) -> str:
+    return f"https://github.com/{repo}"
+
+
+def github_main_archive_url(repo: str) -> str:
+    return f"https://github.com/{repo}/archive/refs/heads/main.zip"
 
 
 def fetch_version(label: str, url: str, *, quiet: bool) -> str | None:
@@ -365,8 +367,8 @@ def check_updates(*, quiet: bool = False, open_browser: bool = False) -> dict[st
     )
 
     fork_update_available = fork_version is not None and local_version != fork_version
-    fork_release_url = github_releases_url(current_fork_repo, fork_version)
-    fork_latest_url = github_releases_url(current_fork_repo)
+    fork_repo_url = github_repo_url(current_fork_repo)
+    fork_archive_url = github_main_archive_url(current_fork_repo)
 
     if not quiet:
         print(f"Установленная версия форка: {local_version}")
@@ -376,20 +378,21 @@ def check_updates(*, quiet: bool = False, open_browser: bool = False) -> dict[st
             print(f"Последняя версия форка: {fork_version}")
 
         if fork_version is None:
-            print(f"Релизы форка: {fork_latest_url}")
+            print(f"Страница форка: {fork_repo_url}")
         elif fork_update_available:
             print(f"Доступно обновление форка: {fork_version}")
-            print(f"Релизы форка: {fork_release_url}")
+            print(f"Страница форка: {fork_repo_url}")
+            print(f"Архив main: {fork_archive_url}")
             if open_browser:
-                opened = webbrowser.open(fork_latest_url)
-                print("Открываю страницу релизов форка" if opened else "Не удалось открыть браузер")
+                opened = webbrowser.open(fork_repo_url)
+                print("Открываю страницу форка" if opened else "Не удалось открыть браузер")
         else:
             print("Установлена последняя версия форка")
 
         if original_version and fork_version and original_version != fork_version:
             print(
                 "Версия оригинального проекта отличается от версии форка. "
-                "Это нормально, если форк обновляется отдельными релизами."
+                "Это нормально, если форк обновляется отдельными коммитами."
             )
 
     return {
@@ -398,8 +401,8 @@ def check_updates(*, quiet: bool = False, open_browser: bool = False) -> dict[st
         "fork": fork_version,
         "fork_repo": current_fork_repo,
         "fork_update_available": fork_update_available,
-        "fork_release_url": fork_release_url,
-        "fork_latest_url": fork_latest_url,
+        "fork_repo_url": fork_repo_url,
+        "fork_archive_url": fork_archive_url,
     }
 
 
@@ -698,7 +701,7 @@ def start_background(strategy: str | None) -> None:
         result = check_updates(quiet=True)
         if result["fork_update_available"]:
             print(f"[INFO] доступна новая версия форка: {result['fork']}")
-            print(f"[INFO] релизы форка: {result['fork_latest_url']}")
+            print(f"[INFO] страница форка: {result['fork_repo_url']}")
 
     ensure_not_running()
     strategy_path = parse_strategy_path(strategy)
@@ -1045,7 +1048,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--open",
         action="store_true",
         dest="open_browser",
-        help="открыть страницу релизов форка, если доступно обновление",
+        help="открыть страницу форка, если доступно обновление",
     )
     subparsers.add_parser("update-ipset", help="обновить lists/ipset-all.txt")
     subparsers.add_parser("update-hosts", help="обновить /etc/hosts управляемым блоком")
