@@ -1,218 +1,268 @@
-<div align="center">
+# Форк zapret-discord-youtube для Linux
 
-# <img src="https://cdn-icons-png.flaticon.com/128/5968/5968756.png" height=28 /> <a href="https://github.com/Flowseal/">Flowseal</a><a href="https://github.com/Flowseal/zapret-discord-youtube">/zapret-discord-youtube</a> <img src="https://cdn-icons-png.flaticon.com/128/1384/1384060.png" height=28 />
+![Linux](https://img.shields.io/badge/Linux-nftables-2f6fed)
+![Python](https://img.shields.io/badge/Python-3.x-3776ab)
+![systemd](https://img.shields.io/badge/systemd-supported-4d4d4d)
+![NFQUEUE](https://img.shields.io/badge/NFQUEUE-required-6f42c1)
 
-**NEW**: Ускорение Telegram Desktop - https://github.com/Flowseal/tg-ws-proxy  
-Альтернатива https://github.com/bol-van/zapret-win-bundle  
-Также вы можете материально поддержать оригинального разработчика zapret [тут](https://github.com/bol-van/zapret?tab=readme-ov-file#%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C-%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA%D0%B0)
-</div>
+Linux-лаунчер для стратегий `zapret-discord-youtube`. Он берет существующие `general*.bat` стратегии, переводит Windows-пути и переменные в Linux-окружение, ставит правила `nftables` и отправляет подходящий трафик в нативный `nfqws`.
 
-> [!CAUTION]
->
-> ### ФЕЙКИ
-> Я не веду никакие другие страницы/группы в телеграм/ютуб каналы  
-> Если вы наткнулись на что-то вне этой страницы гитхаба, что распространяется от моего лица - **ФЕЙК**.
-
-> [!WARNING]
->
-> ### АНТИВИРУСЫ
-> WinDivert может вызвать реакцию антивируса.
-> WinDivert - это инструмент для перехвата и фильтрации трафика, необходимый для работы zapret.
-> Замена iptables и NFQUEUE в Linux, которых нет под Windows.
-> Он может использоваться как хорошими, так и плохими программами, но сам по себе не является вирусом.
-> Драйвер WinDivert64.sys подписан для возможности загрузки в 64-битное ядро Windows.
->
-> **Выдержка из [`readme.md`](https://github.com/bol-van/zapret-win-bundle/blob/master/readme.md#%D0%B0%D0%BD%D1%82%D0%B8%D0%B2%D0%B8%D1%80%D1%83%D1%81%D1%8B) репозитория [bol-van/zapret-win-bundle](https://github.com/bol-van/zapret-win-bundle)*
->
-> Некоторые антивирусы склонны относить файлы WinDivert к классам повышенного риска или хакерским инструментам. Происходит удаление файла и помещение его в карантин. При этом детект обязательно имеет название `WinDivert` или `Not-a-virus:RiskTool.Multi.WinDivert`
->
-> В случае проблем с антивирусом добавьте папку с запретом в исключения, либо отключите детектирование PUA (потенциально нежелательных приложений). Например, в касперском есть галочка "Обнаруживать легальные приложения, которые злоумышленники часто используют для нанесения вреда". При аккуратной и правильной настройке исключений - рекомендуется настроить исключение, но если вы не до конца понимаете что делаете - рекомендуется отключить детект PUA.
+Порт рассчитан на обычные desktop/server-дистрибутивы с `systemd`, `nftables` и `iproute2`: Arch, Fedora, Debian, Ubuntu, openSUSE и похожие системы. Для OpenRC/runit, OpenWrt, WSL, контейнеров и роутеров может понадобиться отдельная адаптация.
 
 > [!IMPORTANT]
-> Все бинарные файлы в папке [`bin`](./bin) взяты из [zapret-win-bundle/zapret-winws](https://github.com/bol-van/zapret-win-bundle/tree/master/zapret-winws) и [zapret/releases](https://github.com/bol-van/zapret/releases). Вы можете это проверить с помощью хэшей/контрольных сумм. Проверяйте, что запускаете, используя сборки из интернета!
+> Проект не содержит Linux-бинарник `nfqws`. Нужно установить или собрать нативный zapret отдельно, а затем указать путь к `nfqws` одним из способов ниже.
 
-## ⚙️Использование
+## Возможности
 
-1. Включите Secure DNS
-    * В Chrome - "Использовать безопасный DNS", и выбрать поставщика услуг DNS (выбрать вариант, отличный от поставщика по умолчанию)
-    * В Firefox - "Включить DNS через HTTPS, используя: Максимальную защиту", затем "Выбрать поставщика" и вписать URL поставщика вручную, например можно использовать `https://dns.google/dns-query` (т.к. поставщик Cloudflare может быть заблокирован)
-    * В Windows 11 поддерживается включение Secure DNS прямо в настройках ОС - [инструкция тут](https://remontka.pro/dns-over-https-windows-11/). Рекомендуется, если вы пользуетесь Windows 11
-    * Если у вас роутер Keenetic, включите в настройках роутера опцию "Транзит запросов". Отключение этой опции может привести к проблемам при настройке и использовании Secure DNS на компьютере
+| | |
+| --- | --- |
+| Запуск стратегий | Использует любые `general*.bat` стратегии из корня репозитория |
+| nftables | Создает отдельную таблицу `inet zapret_linux` |
+| NFQUEUE | Передает TCP/UDP пакеты в очередь `nfqws` |
+| systemd | Устанавливает автозапуск через `zapret-discord-youtube-linux.service` |
+| Game Filter | Включает обработку портов выше `1023` для игр и приложений |
+| IPSet Filter | Управляет режимами `loaded`, `none`, `any` для `lists/ipset-all.txt` |
+| Диагностика | Проверяет зависимости, `nfqws`, WAN-интерфейс и текущие настройки |
+| | |
 
-2. Скачайте архив (zip/rar) со [страницы последнего релиза](https://github.com/Flowseal/zapret-discord-youtube/releases/latest)
+## Требования
 
-3. Зайдите в свойства скачанного архива и поставьте галочку "Разблокировать". Если вы используете архиватор 7-Zip или PeaZip, этот шаг можно пропустить
+Нужны:
 
-4. Распакуйте содержимое архива по пути, который не содержит кириллицу/спец. символы
+- `bash`
+- `python3`
+- `ip` из `iproute2`
+- `nft` из `nftables`
+- поддержка NFQUEUE в ядре
+- `nfqws` из нативного zapret для Linux
+- `systemd`, если нужен автозапуск через `service.sh`
 
-5. Запустите нужный файл
+Скрипт ищет `nfqws` в таком порядке:
 
-## ℹ️Краткие описания файлов
+1. переменная `NFQWS_BIN=/path/to/nfqws`
+2. `bin/linux/nfqws`
+3. `/opt/zapret/nfq/nfqws`
+4. `nfqws` из `PATH`
 
-- [**`general.bat ...`**](./general.bat) - запуск стратегии вручную
+Пример явного пути:
 
-  Запуск вручную можно использовать для проверки работоспособности стратегий. Работоспособность той или иной стратегии зависит от многих факторов. **Пробуйте разные стратегии (ALT, FAKE и другие), пока не найдёте рабочее для вас решение**
-
-- [**`service.bat`**](./service.bat) - установка в автозапуск и другие функции:
-  - <ins>**`Install Service`** - установка любой стратегии в автозапуск (services.msc)</ins>
-  - **`Remove Services`** - удаление стратегии и WinDivert из служб
-  - **`Check Status`** - проверка статуса обхода и служб (стратегии на автозапуске и WinDivert)
-  - **`Game Filter`** - переключение режима обхода для игр (и других сервисов, использующих UDP и TCP на портах выше 1023).  
-  **После переключения требуется перезапуск стратегии.**  
-  В скобках указан текущий статус (включено/выключено).
-  - **`IPSet Filter`** - переключение режима обхода сервисов из `ipset-all.txt`.  
-  Полезно при тестировании, если не работает ресурс, который без zapret работает  
-  В скобках указан текущий статус:
-    - `none` - никакие айпи не попадают под проверку
-    - `loaded` - айпи проверяется на вхождение в список
-    - `any` - любой айпи попадает под фильтр  
-  - **`Auto-Update Check`** - Вкл/Выкл автоматическую проверку на обновления
-  - **`Update IPSet List`** - обновление списка `ipset-all.txt` актуальным из репозитория
-  - **`Update Hosts File`** - обновление файла hosts <ins>**для починки веб версии телеграма и подключения к голосовому чату Discord**</ins>
-  - **`Check for Updates`** - проверка на обновления
-  - **`Run Diagnostics`** - диагностика на распространённые причины, по которым zapret может не работать.  
-  В конце можно очистить кэш <img src="https://cdn-icons-png.flaticon.com/128/5968/5968756.png" height=11 /> `Discord`, что может помочь, если он неожиданно перестал работать
-  - **`Run Tests`** - запуск утилиты для проверки стратегий на работоспособность:
-    - `Standard tests` - проверка сайтов из `utils/targets.txt`
-    - `DPI checkers` - проверка DPI на различных провайдерах (Cloudflare, Amazon и др.)
-
-
-## ☑️Распространенные вопросы и проблемы
-
-### После запуска скрипта `general*` ничего не происходит
-
-- После запуска стратегии (отдельным bat файлом, не через service), должен открыться winws.exe (обход), который можно увидеть в панели задач.  
-Если этого не произошло, то см. [#522](https://github.com/Flowseal/zapret-discord-youtube/issues/522)
-
-### Не работает телеграм (веб версия) или бесконечное "подключение" к голосовому чату Discord
-Запустите **`service.bat`**, выберите пункт **`Update hosts file`**. После чего, если ваш hosts будет неактуальным, то Вам будет предложено обновить его самостоятельно:  
-  - Скопируйте весь текст из открывшегося блокнота
-  - Откройте файл `hosts` в появившейся папке с помощью текстового редактора, открытого от имени администратора
-  - Добавьте в конец файла `hosts` то, что скопировали (или замените, если до этого Вы уже добавляли подобное)
-  - Сохраните и перепроверьте подключение. Если не работает - убедитесь, что файл `hosts` действительно сохранился.
-
-### Обход не работает / перестал работать
-
-> [!IMPORTANT]
-> **Стратегии со временем могут переставать работать.**
-> Определенная стратегия может работать какое-то время, но со временем она может переставать работать из-за обнаружения.
-> В репозитории представлены множество различных стратегий для обхода. Если ни одна из них вам не помогает, то вам необходимо создать новую, взяв за основу одну из представленных здесь и изменив её параметры.
-> Информацию про параметры стратегий вы можете найти [тут](https://github.com/bol-van/zapret/blob/master/docs/readme.md#nfqws).
-
-- Проверьте, чтобы не было ошибок в `service.bat` -> `Run Diagnostics`
-
-- Убедитесь, что адрес ресурса записан в списках доменов или IP
-
-- Проверьте другие стратегии (**`ALT`**/**`FAKE`** и другие)
-
-- Попробуйте полную переустановку (см. раздел ниже)
-
-- См. [#765](https://github.com/Flowseal/zapret-discord-youtube/issues/765)
-
-### Как переустановить/обновить полностью?
-- Сохраните ресурсы/данные, которые вы сами добавляли
-- Перезапустите устройство
-- `service.bat` -> `Remove Services`
-- `service.bat` -> `Run Diagnostics` (если есть ошибки - устраните их) -> в конце Y
-- Удалите папку с запретом
-- Скачайте последнюю версию [со страницы релизов](https://github.com/Flowseal/zapret-discord-youtube/releases) (`zapret-discord-youtube-...`)
-- Нажмите пкм по архиву -> свойства. Если снизу справа есть галочка разблокировать, то нажмите на неё -> применить -> ОК
-- Распакуйте в новую папку в корне диска (без спец. символов и пробелов)
-- Далее пробуйте запускать различные `general` скрипты (стратегии). Проверьте доступность интернет ресурсов - если не работают, то закрывайте программу (в панели задач иконка замочка) и пробуйте другую стратегию
-- Как найдёте рабочую стратегию, можете поставить её на автозапуск: `service.bat` -> `Install Service` -> выбираете нужную
-
-### Не работает игра/приложение с включённым запретом
-
-- Проверьте, что в service.bat `Game Filter` **`disabled`**, а `IPSet Filter` **`none`**. Иначе это может затронуть доступность ресурсов, которых вы не ожидали.
-
-### Античит ругается на WinDivert
-
-- Прочитайте инструкцию тут - https://github.com/bol-van/zapret-win-bundle/tree/master/windivert-hide
-
-### Требуется цифровая подпись драйвера WinDivert (Windows 7)
-
-- Замените файлы `WinDivert.dll` и `WinDivert64.sys` в папке [`bin`](./bin) на одноименные из [zapret-win-bundle/win7](https://github.com/bol-van/zapret-win-bundle/tree/master/win7)
-
-### При удалении с помощью [**`service.bat`**](./service.bat), WinDivert остается в службах
-
-1. Узнайте название службы с помощью команды, в командной строке Windows (Win+R, `cmd`):
-
-```cmd
-driverquery | find "Divert"
+```bash
+sudo NFQWS_BIN=/path/to/nfqws ./run.sh
 ```
 
-2. Остановите и удалите службу командами:
+⠀
 
-```cmd
-sc stop название_из_первого_шага
+# Использование
 
-sc delete название_из_первого_шага
+1. Установить зависимости своего дистрибутива: `python3`, `nftables`, `iproute2` и библиотеки для NFQUEUE.
+
+2. Проверить окружение:
+
+```bash
+python3 linux/zapret_linux.py diagnostics
 ```
 
-### Не работает <img src="https://cdn-icons-png.flaticon.com/128/1384/1384060.png" height=18 /> YouTube
+3. Посмотреть доступные стратегии:
 
-- Убедитесь что вы настроили Secure DNS.
-- Отключите блокировщик рекламы, известно что YouTube начал с ними бороться.
-- Пробуйте все другие стратегии (если раньше работало, но перестало).
-- См. также [#251](https://github.com/Flowseal/zapret-discord-youtube/discussions/251)
+```bash
+python3 linux/zapret_linux.py list
+```
 
-### Не работает <img src="https://cdn-icons-png.flaticon.com/128/5968/5968756.png" height=18 /> Discord
+4. Запустить стратегию вручную:
 
-- Желательно сначала узнать, на какой стратегии открывается сайт YouTube. Запустите эту стратегию.
-- Проверьте Discord в браузере: https://discord.com/app. В браузере работает? Если работает, то можете пользоваться в нём.
-- Если Discord и в браузере не работает, убедитесь что вы настроили Secure DNS, и после этого ещё раз пробуйте все стратегии. Бывает такое, что на одной стратегии YouTube работает, а Discord нет.
-- См. также [#252](https://github.com/Flowseal/zapret-discord-youtube/discussions/252)
+```bash
+sudo ./run.sh "general (ALT9).bat"
+```
 
-### Не работает <img src="https://cdn-icons-png.flaticon.com/128/5968/5968804.png" height=18 /> Telegram
+Если не указать стратегию, будет использован `general.bat`.
 
-- Используйте программу [tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy)
-- Или используйте бесплатные MTProto прокси из интернета
+5. Проверить состояние:
 
-### Не работают игры
+```bash
+python3 linux/zapret_linux.py status
+```
 
-Есть много разных игр. Исследовать и чинить каждую из них нет возможности.
+6. Остановить ручной запуск:
 
-Наиболее универсальный рецепт такой:
-- через `service.bat` обновите ipset и включите `Game Filter`
-- если это не поможет, то попробуйте также включить настройку `ipset any`
+```bash
+sudo python3 linux/zapret_linux.py stop
+```
 
-Но помните, что при включении `ipset any` появятся проблемы с открытием многих сайтов. Чтобы этого избежать, не используйте `ipset any` на постоянной основе. Вместо этого нужно выяснить все IP адреса, которые используются игрой, и добавить их в `ipset-all.txt`
+## Автозапуск
 
-Если и это не помогло, создайте ветку обсуждений в разделе [Discussions](https://github.com/Flowseal/zapret-discord-youtube/discussions) (не в issues) и ждите помощи от других игроков.
+Установить systemd unit и сразу запустить стратегию:
 
-### Не нашли своей проблемы
+```bash
+sudo ./service.sh start "general (ALT9).bat"
+```
 
-- Создайте её [тут](https://github.com/Flowseal/zapret-discord-youtube/issues)
+Основные команды:
 
-## 🗒️Добавление адресов прочих ресурсов
+| | |
+| --- | --- |
+| `./service.sh status` | Показать systemd-статус и состояние лаунчера |
+| `sudo ./service.sh restart` | Перезапустить текущую стратегию |
+| `sudo ./service.sh restart "general (ALT11).bat"` | Перезапустить с другой стратегией |
+| `sudo ./service.sh stop` | Остановить сервис |
+| `sudo ./service.sh remove` | Удалить systemd unit |
+| | |
 
-Список адресов для обхода можно расширить, добавляя их в:
-- **`list-general-user.txt`** для доменов (поддомены автоматически учитываются)
-- **`list-exclude-user.txt`** для исключения доменов (например, если айпи сети указан в `ipset-all.txt`, но конкретный домен из этой сети не надо фильтровать)
-- **`ipset-all.txt`** для IP и подсетей
-- **`ipset-exclude-user.txt`** для исключения IP и подсетей
-  - Файлы **`*-user.txt`** автоматически создадутся при первом запуске `zapret` или `service.bat`
+Systemd unit называется `zapret-discord-youtube-linux.service`.
 
-## ⭐Поддержка проекта
+## Настройки
 
-Вы можете поддержать проект, поставив :star: этому репозиторию (сверху справа этой страницы)
+### Game Filter
 
-Также вы можете материально поддержать оригинального разработчика zapret [тут](https://github.com/bol-van/zapret?tab=readme-ov-file#%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C-%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA%D0%B0)
+Game Filter расширяет обработку на порты выше `1023`. Обычно это нужно для игр и приложений, которые используют нестандартные TCP/UDP-порты.
 
-<a href="https://star-history.com/#Flowseal/zapret-discord-youtube&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Flowseal/zapret-discord-youtube&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Flowseal/zapret-discord-youtube&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Flowseal/zapret-discord-youtube&type=Date" />
- </picture>
-</a>
+| Команда | Режим |
+| --- | --- |
+| `python3 linux/zapret_linux.py game-filter status` | Показать текущий режим |
+| `python3 linux/zapret_linux.py game-filter all` | TCP и UDP |
+| `python3 linux/zapret_linux.py game-filter tcp` | Только TCP |
+| `python3 linux/zapret_linux.py game-filter udp` | Только UDP |
+| `python3 linux/zapret_linux.py game-filter disable` | Выключить |
 
-## ⚖️Лицензирование
+После изменения режима перезапустить zapret:
 
-Проект распространяется на условиях лицензии [MIT](https://github.com/Flowseal/zapret-discord-youtube/blob/main/LICENSE.txt)
+```bash
+sudo ./service.sh restart
+```
 
-## 🩷Благодарность участникам проекта
+### IPSet Filter
 
-[![Contributors](https://contrib.rocks/image?repo=Flowseal/zapret-discord-youtube)](https://github.com/Flowseal/zapret-discord-youtube/graphs/contributors)
+IPSet Filter управляет файлом `lists/ipset-all.txt`.
 
-💖 Отдельная благодарность разработчику [zapret](https://github.com/bol-van/zapret) - [bol-van](https://github.com/bol-van)
+| Режим | Что означает |
+| --- | --- |
+| `loaded` | Используется список IP и подсетей из `lists/ipset-all.txt` |
+| `none` | Список заменен на `203.0.113.113/32`, IPSet-профили почти ничего не затрагивают |
+| `any` | Файл пустой, под IPSet-профили попадает любой IP |
+| | |
+
+Команды:
+
+```bash
+python3 linux/zapret_linux.py ipset-filter status
+python3 linux/zapret_linux.py ipset-filter loaded
+python3 linux/zapret_linux.py ipset-filter none
+python3 linux/zapret_linux.py ipset-filter any
+```
+
+После изменения режима нужен перезапуск:
+
+```bash
+sudo ./service.sh restart
+```
+
+### Обновления
+
+```bash
+python3 linux/zapret_linux.py update-ipset
+sudo python3 linux/zapret_linux.py update-hosts
+python3 linux/zapret_linux.py check-updates
+python3 linux/zapret_linux.py update-check enable
+python3 linux/zapret_linux.py update-check disable
+```
+
+`check-updates` показывает установленную версию форка, последнюю версию оригинального проекта и последнюю версию форка. Чтобы сразу открыть страницу релизов форка при доступном обновлении:
+
+```bash
+python3 linux/zapret_linux.py check-updates --open
+```
+
+## Переменные окружения
+
+| Переменная | Назначение |
+| --- | --- |
+| `NFQWS_BIN` | Явный путь к `nfqws` |
+| `NFQWS_USER` | Пользователь, под которым должен работать `nfqws` после старта |
+| `NFQWS_UID` | UID вместо имени пользователя |
+| `LINUX_AUTO_GOOGLE_QUIC=0` | Отключить автоматическое добавление `list-google.txt` в UDP 443 hostlist-профили |
+
+## Файлы проекта
+
+| Файл | Назначение |
+| --- | --- |
+| `linux/zapret_linux.py` | Основной Linux-лаунчер |
+| `run.sh` | Ручной запуск в фоне |
+| `service.sh` | Установка, статус и управление systemd-unit |
+| `.runtime/state.json` | Состояние текущего запуска |
+| `.runtime/nfqws.log` | Лог `nfqws` |
+| `utils/game_filter.enabled` | Режим Game Filter |
+| `lists/ipset-all.txt` | Основной IPSet-список |
+| `lists/ipset-all.txt.backup` | Backup списка для переключения IPSet Filter |
+
+⠀
+
+## Диагностика
+
+Базовая проверка:
+
+```bash
+python3 linux/zapret_linux.py diagnostics
+```
+
+Текущие правила `nftables`:
+
+```bash
+sudo nft list table inet zapret_linux
+```
+
+Лог `nfqws`:
+
+```bash
+tail -n 120 .runtime/nfqws.log
+```
+
+Текущий статус:
+
+```bash
+python3 linux/zapret_linux.py status
+```
+
+В рабочем игровом сценарии обычно должно быть видно что-то вроде:
+
+```text
+Game Filter: enabled (TCP and UDP)
+IPSet Filter: loaded (30995 entries)
+```
+
+## Если игра не подключается
+
+1. Проверь, что Game Filter включен:
+
+```bash
+python3 linux/zapret_linux.py game-filter status
+```
+
+2. Проверь, что IPSet Filter действительно `loaded`, а не `none`:
+
+```bash
+python3 linux/zapret_linux.py status
+```
+
+3. Перезапусти сервис после любых изменений Game Filter или IPSet Filter:
+
+```bash
+sudo ./service.sh restart
+```
+
+4. Если игра использует IPv6, этот порт может ее не затронуть. Для проверки временно отключи IPv6 в системе или в настройках сети.
+
+5. Если IP серверов игры отсутствует в `lists/ipset-all.txt`, добавь нужные IP или подсети в этот файл и перезапусти zapret.
+
+## Ограничения
+
+- Порт рассчитан на сценарий с `systemd`, `nftables` и NFQUEUE.
+- Скрипт требует root для изменения правил `nftables`.
+- Стратегии остаются теми же `.bat` файлами. Если конкретная стратегия не работает у провайдера, следует попробовать другие `general*`.
+- Для non-systemd систем автозапуск нужно настраивать отдельно, но ручной запуск через `run.sh` может подойти.
+
+⠀
+
+# Thank You!
+⠀⠀❤︎
+Этот репозиторий является форком [Flowseal/zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube).
+
+⠀⠀❤︎ Нативный `nfqws` относится к проекту [bol-van/zapret](https://github.com/bol-van/zapret).
