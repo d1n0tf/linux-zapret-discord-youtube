@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pwd
 import re
 import shlex
 import shutil
@@ -142,6 +143,23 @@ def resolve_nfqws_user_arg() -> str:
     env_uid = os.environ.get("NFQWS_UID", "").strip()
     if env_uid:
         return f"--uid={env_uid}"
+
+    sudo_user = os.environ.get("SUDO_USER", "").strip()
+    if sudo_user and sudo_user != "root":
+        try:
+            pwd.getpwnam(sudo_user)
+        except KeyError:
+            pass
+        else:
+            return f"--user={sudo_user}"
+
+    repo_owner_uid = ROOT.stat().st_uid
+    try:
+        repo_owner = pwd.getpwuid(repo_owner_uid).pw_name
+    except KeyError:
+        repo_owner = ""
+    if repo_owner and repo_owner != "root":
+        return f"--user={repo_owner}"
 
     return "--uid=0"
 
